@@ -12,6 +12,15 @@ var budgetController = (function(){
 		this.value = value;
 	};
 
+	var calculateTotal = function(type) {
+		var sum = 0;
+		data.allItems[type].forEach(function(cur) {
+		sum += cur.value;
+		});
+
+		data.totals[type] = sum;
+	}
+
 	var data = {
 		allItems: {
 			exp: [],
@@ -20,7 +29,10 @@ var budgetController = (function(){
 		totals: {
 			exp: 0,
 			inc: 0
-		}
+		},
+
+		budget: 0,
+		percentage: -1
 	};
 
 
@@ -43,6 +55,29 @@ var budgetController = (function(){
 			data.allItems[type].push(newItem);
 
 			return newItem;
+		},
+
+		calculateBudget: function(type) {
+			calculateTotal('inc');
+			calculateTotal('exp');
+
+			data.budget = data.totals.inc - data.totals.exp;
+
+			if(data.totals.inc > 0) {
+				data.percentage = Math.round((data.totals.exp / data.totals.inc) * 100);
+			} else {
+				data.percentage = -1;
+			}
+			
+		},
+
+		getBudget: function() {
+			return {
+				budget: data.budget,
+				totalInc: data.totals.inc,
+				totalExp: data.totals.exp,
+				percentage: data.percentage
+			}
 		},
 
 		testing: function() {
@@ -71,7 +106,7 @@ var UIController = (function(){
 			return {
 			inputType: document.querySelector(DOMselector.type).value,
 			inputDescription: document.querySelector(DOMselector.desc).value,
-			inputValue: document.querySelector(DOMselector.value).value,
+			inputValue: parseFloat(document.querySelector(DOMselector.value).value),
 			};
 		},
 
@@ -134,14 +169,33 @@ var controller = (function(budgetCtrl, uiCtrl) {
 
 	}
 
+	var updateBudget = function() {
+		
+		budgetCtrl.calculateBudget();
+
+		var budget = budgetCtrl.getBudget();
+
+		console.log(budget);
+
+	}
+
 	var ctrlAddItem = function() {
+
 		var input = uiCtrl.getInput();
 //		console.log(input);
+
+		if(input.inputDescription != "" && !isNaN(input.inputValue) && input.inputValue > 0) {
+
 		var newItem = budgetCtrl.addItem(input.inputType, input.inputDescription, input.inputValue);
 
 		uiCtrl.addItemList(newItem, input.inputType);
 
 		uiCtrl.clearFields();
+
+		updateBudget();
+
+		}
+
 	}
 
 	return {
